@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Compras com LocalStorage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .imagem-produto {
+            width: 50px; /* Define a largura da imagem */
+            height: auto; /* Mantém a proporção */
+            margin-right: 10px; /* Espaçamento entre a imagem e o texto */
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1>Lista de Compras</h1>
+        <div class="input-group mb-3">
+            <input type="text" id="produto" class="form-control" placeholder="Adicionar produto" aria-label="Adicionar produto">
+            <input type="text" id="urlImagem" class="form-control" placeholder="URL da imagem" aria-label="URL da imagem">
+            <button id="adicionar" class="btn btn-info">Adicionar</button> <!-- Cor alterada -->
+        </div>
+        <div id="aviso" class="alert alert-warning d-none" role="alert"></div>
+        <ul id="lista" class="list-group"></ul>
+        <div class="mt-3">
+            <button id="removerTodos" class="btn btn-warning">Remover Todos</button> <!-- Cor alterada -->
+            <button id="restaurarLista" class="btn btn-success">Restaurar Lista</button> <!-- Cor alterada -->
+        </div>
+    </div>
+
+    <script>
+        // Função para carregar a lista de produtos do localStorage
+        function carregarLista() {
+            const produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+            const listaElement = document.getElementById('lista');
+            listaElement.innerHTML = ''; // Limpa a lista atual
+
+            produtos.forEach(({ nome, imagem }) => {
+                criarItem(nome, imagem, listaElement); // Cria um item para cada produto
+            });
+        }
+
+        // Função para criar um item da lista
+        function criarItem(produto, imagem, listaElement) {
+            const li = document.createElement('li');
+            li.className = 'list-group-item d-flex justify-content-between align-items-center';
+            
+            // Adiciona a imagem do produto
+            const img = document.createElement('img');
+            img.src = imagem; // Caminho para a imagem
+            img.alt = produto;
+            img.className = 'imagem-produto';
+
+            // Adiciona o nome do produto
+            const textoProduto = document.createElement('span');
+            textoProduto.textContent = produto;
+            li.appendChild(img); // Adiciona a imagem ao item
+            li.appendChild(textoProduto); // Adiciona o texto do produto ao item
+
+            // Cria um div para os botões
+            const divButtons = document.createElement('div');
+
+            // Cria o botão "Comprar"
+            const btnComprar = document.createElement('button');
+            btnComprar.className = 'btn btn-secondary btn-sm me-2'; // Cor alterada
+            btnComprar.textContent = 'Comprar';
+            btnComprar.onclick = function() {
+                comprarItem(li); // Chama a função para comprar o item
+            };
+
+            // Cria o botão "Remover"
+            const btnRemover = document.createElement('button');
+            btnRemover.className = 'btn btn-dark btn-sm'; // Cor alterada
+            btnRemover.textContent = 'Remover';
+            btnRemover.onclick = function() {
+                removerItem(produto); // Chama a função para remover o item
+            };
+
+            // Adiciona os botões à div
+            divButtons.appendChild(btnComprar);
+            divButtons.appendChild(btnRemover);
+            li.appendChild(divButtons); // Adiciona a div ao item de lista
+            listaElement.appendChild(li); // Adiciona o item à lista
+        }
+
+        // Função para adicionar um produto ao localStorage
+        function adicionarProduto() {
+            const inputProduto = document.getElementById('produto');
+            const inputUrl = document.getElementById('urlImagem');
+            const produto = inputProduto.value.trim();
+            const imagem = inputUrl.value.trim();
+            const avisoElement = document.getElementById('aviso');
+
+            if (!produto || !imagem) {
+                avisoElement.textContent = 'Por favor, preencha o produto e a URL da imagem!';
+                avisoElement.classList.remove('d-none');
+                setTimeout(() => {
+                    avisoElement.classList.add('d-none');
+                }, 3000);
+                return;
+            }
+
+            const produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+
+            // Verifica se o produto já existe
+            if (produtos.find(item => item.nome === produto)) {
+                avisoElement.textContent = 'Produto já adicionado!';
+                avisoElement.classList.remove('d-none');
+                setTimeout(() => {
+                    avisoElement.classList.add('d-none');
+                }, 3000);
+                inputProduto.value = '';
+                inputUrl.value = '';
+                return;
+            }
+
+            produtos.push({ nome: produto, imagem: imagem }); // Armazena o produto e a imagem
+            localStorage.setItem('produtos', JSON.stringify(produtos)); // Armazena no localStorage
+
+            inputProduto.value = '';
+            inputUrl.value = '';
+            carregarLista(); // Atualiza a lista na tela
+        }
+
+        // Função para remover um item da lista e do localStorage
+        function removerItem(produto) {
+            let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+            produtos = produtos.filter(item => item.nome !== produto); // Remove o produto selecionado
+            localStorage.setItem('produtos', JSON.stringify(produtos)); // Atualiza o localStorage
+
+            carregarLista(); // Atualiza a lista na tela
+        }
+
+        // Função para marcar um item como comprado
+        function comprarItem(item) {
+            item.classList.toggle('list-group-item-success'); // Altera a cor do item
+            const btnComprar = item.querySelector('.btn-secondary');
+            btnComprar.disabled = true; // Desabilita o botão "Comprar"
+            btnComprar.textContent = 'Comprado'; // Altera o texto do botão
+        }
+
+        // Função para remover todos os itens da lista
+        function removerTodos() {
+            localStorage.removeItem('produtos'); // Remove todos os produtos do localStorage
+            carregarLista(); // Atualiza a lista na tela
+        }
+
+        // Função para restaurar a lista a partir dos produtos pré-definidos
+        function restaurarLista() {
+            const produtosIniciais = [
+                { nome: 'Maçã', imagem: 'imagens/maca.png' },
+                { nome: 'Banana', imagem: 'imagens/banana.png' },
+                { nome: 'Leite', imagem: 'imagens/vaca.jpg' },
+                { nome: 'Calabresa', imagem: 'imagens/calabresa.png' },
+                { nome: 'Queijo', imagem: 'imagens/queijo.jpg' }
+            ];
+            localStorage.setItem('produtos', JSON.stringify(produtosIniciais)); // Armazena os produtos pré-definidos
+            carregarLista(); // Atualiza a lista na tela
+        }
+
+        // Adiciona produtos pré-definidos ao localStorage, se estiver vazio
+        function inicializarProdutos() {
+            const produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+
+            // Adiciona os produtos pré-definidos se a lista estiver vazia
+            if (produtos.length === 0) {
+                restaurarLista();
+            }
+        }
+
+        // Evento para o botão "Adicionar"
+        document.getElementById('adicionar').addEventListener('click', adicionarProduto);
+
+        // Evento para permitir adicionar produto com a tecla Enter
+        document.getElementById('produto').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                adicionarProduto(); // Chama a função se a tecla Enter for pressionada
+            }
+        });
+
+        // Evento para o botão "Remover Todos"
+        document.getElementById('removerTodos').addEventListener('click', removerTodos);
+
+        // Evento para o botão "Restaurar Lista"
+        document.getElementById('restaurarLista').addEventListener('click', restaurarLista);
+
+        // Inicializa a lista de produtos ao carregar a página
+        inicializarProdutos();
+        carregarLista();
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
